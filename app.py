@@ -5,9 +5,7 @@ import re
 import pandas as pd
 import plotly.express as px
 import qrcode
-import speech_recognition as sr
 import streamlit as st
-from streamlit_mic_recorder import mic_recorder
 from groq import Groq
 
 # Page Config
@@ -35,10 +33,8 @@ if not st.session_state.authenticated:
     st.stop()
 
 # --- DYNAMIC GROQ API KEY SETUP ---
-api_key = None
-if "GROQ_API_KEY" in st.secrets:
-    api_key = st.secrets["GROQ_API_KEY"]
-else:
+api_key = st.secrets.get("GROQ_API_KEY")
+if not api_key:
     with st.sidebar:
         st.header("🔑 API Configuration")
         api_key = st.text_input("Enter Groq API Key", type="password")
@@ -80,7 +76,7 @@ with st.sidebar:
   buf = BytesIO()
   img.save(buf)
   st.image(
-      buf.getvalue(), caption="Scan to open app", use_container_width=True
+      buf.getvalue(), caption="Scan to open app", width='stretch'
   )
 
   st.divider()
@@ -103,36 +99,34 @@ with st.sidebar:
     st.success("CSV log cleared.")
     st.rerun()
 
-# Voice Recording Section
+# Voice Recording Section (Clean Native Audio Input)
 st.subheader("🎙️ Record Complaint by Voice")
-audio = mic_recorder(
-    start_prompt="🔴 Start Recording",
-    stop_prompt="⏹️ Stop Recording",
-    key="recorder",
-)
+audio_file = st.audio_input("Record your complaint")
 
-if audio:
-  with st.spinner("Transcribing audio..."):
-    recognizer = sr.Recognizer()
-    audio_data = sr.AudioData(
-        audio["bytes"], sample_rate=16000, sample_width=2
-    )
-    try:
-      transcribed_text = recognizer.recognize_google(audio_data)
-      st.session_state.complaint_text_input = transcribed_text
-      st.success("Voice transcribed successfully!")
-    except sr.UnknownValueError:
-      st.error("Could not understand the audio. Please try speaking clearer.")
-    except sr.RequestError as e:
-      st.error(f"Speech recognition service error: {e}")
+transcribed_audio_text = ""
+if audio_file is not None:
+    st.audio(audio_file)
+    with st.spinner("Transcribing audio with Groq Whisper..."):
+        try:
+            transcription = client.audio.transcriptions.create(
+                file=(audio_file.name, audio_file.getvalue()),
+                model="whisper-large-v3-turbo",
+                response_format="json"
+            )
+            transcribed_audio_text = transcription.text
+            st.success("Audio transcribed successfully!")
+        except Exception as e:
+            st.error(f"Error transcribing audio: {e}")
 
-# Text Area connected to session state
+# Pre-fill or combine text area
+initial_text = transcribed_audio_text if transcribed_audio_text else st.session_state.complaint_text_input
+
 complaint_text = st.text_area(
     "Customer Complaint Text:",
-    value=st.session_state.complaint_text_input,
+    value=initial_text,
     height=140,
     placeholder=(
-        "Type your complaint or use the mic button above to speak..."
+        "Type your complaint or use the mic recorder above to speak..."
     ),
 )
 
@@ -140,7 +134,7 @@ if st.button("Analyze Complaint", type="primary"):
   if not complaint_text.strip():
     st.warning("Please paste or record a complaint to analyze.")
   else:
-    with st.spinner("Analyzing complaint with Groq (Llama 3)..."):
+    with st.spinner("Analyzing complaint with Groq..."):
       prompt = f"""
             Analyze the following customer complaint and extract structured information.
             Return ONLY a valid JSON object matching this exact schema:
@@ -243,7 +237,7 @@ if st.session_state.history:
         hole=0.4,
         color_discrete_sequence=px.colors.qualitative.Pastel,
     )
-    st.plotly_chart(fig_sentiment, use_container_width=True)
+    st.plotly_chart(fig_sentiment, width='stretch')
 
   with c2:
     urgency_order = ["Low", "Medium", "High", "Critical"]
@@ -267,11 +261,11 @@ if st.session_state.history:
             "Critical": "#e74c3c",
         },
     )
-    st.plotly_chart(fig_urgency, use_container_width=True)
+    st.plotly_chart(fig_urgency, width='stretch')
 
   # Collapsible History Views
   with st.expander("📊 View Complete Logged Records (Table View)", expanded=False):
-    st.dataframe(df, use_container_width=True)
+    st.dataframe(df, width='stretch')
 
   with st.expander("📂 View Individual Past Complaints", expanded=False):
     for record in reversed(st.session_state.history):
