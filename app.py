@@ -158,7 +158,7 @@ if st.button("Analyze Complaint", type="primary"):
             """
       try:
         chat_completion = client.chat.completions.create(
-            model="llama-3.1-8b-instant",
+            model="openai/gpt-oss-20b",
             messages=[{"role": "user", "content": prompt}],
             response_format={"type": "json_object"}
         )
