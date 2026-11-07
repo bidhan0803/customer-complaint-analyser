@@ -1,0 +1,3 @@
+timestamp,complaint,category,urgency,sentiment,summary,key_issues,recommended_action
+2026-11-07 10:05:31,Hello. Nice product,General Feedback,Low,Positive,Customer left a positive comment,,Thank the customer for their kind words
+2026-11-07 10:05:58,Hello. Nice product,,,Neutral,"The customer made a positive comment about the product, but did not express any issues or concerns.",,Thank the customer for their positive feedback and acknowledge their satisfaction.

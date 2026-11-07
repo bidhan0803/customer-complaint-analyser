@@ -1,0 +1,7 @@
+streamlit
+pandas
+plotly
+qrcode
+SpeechRecognition
+streamlit-mic-recorder
+groq
