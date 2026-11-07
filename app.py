@@ -8,12 +8,21 @@ import qrcode
 import streamlit as st
 from groq import Groq
 
-# Page Config
-st.set_page_config(
-    page_title="Customer Complaint Analyzer",
-    page_icon="🔍",
-    layout="wide",
+
+st.title("🔍 Customer Complaint Analyzer (Cloud AI)")
+
+# Integrated Kabir Doha Header
+st.markdown(
+    "> **\"निंदक नियरे राखिये, आंगन कुटी छवाय।**\n"
+    "> **बिन पानी, साबुन बिना, निर्मल करे सुहाय॥\"**\n\n"
+    "*— संत कबीर दास*"
 )
+
+st.write(
+    "Analyze customer complaints via text or voice (English & Indic languages), log data to CSV,"
+    " and monitor real-time trends."
+)
+
 
 # --- PASSWORD AUTHENTICATION ---
 if "authenticated" not in st.session_state:
