@@ -53,13 +53,18 @@ if not api_key:
 
 client = Groq(api_key=api_key)
 
+# Initialize Groq Quota State Defaults
+if "limit_req" not in st.session_state:
+    st.session_state.limit_req = 1000
+if "remaining_req" not in st.session_state:
+    st.session_state.remaining_req = 1000
+if "remaining_tokens" not in st.session_state:
+    st.session_state.remaining_tokens = 6000
+if "limit_tokens" not in st.session_state:
+    st.session_state.limit_tokens = 6000
+
 LOG_FILE = "complaints_log.csv"
 
-st.title("🔍 Customer Complaint Analyzer (Cloud AI)")
-st.write(
-    "Analyze customer complaints via text or voice, log data to CSV,"
-    " and monitor real-time trends."
-)
 
 # Initialize Session State
 if "history" not in st.session_state:
@@ -76,6 +81,24 @@ if "complaint_text_input" not in st.session_state:
 
 # Sidebar: QR Code & History Controls
 with st.sidebar:
+  # --- Live Groq Quota Bar ---
+  st.header("⚡ API Quota")
+  used_req = st.session_state.limit_req - st.session_state.remaining_req
+  req_ratio = min(max(used_req / max(st.session_state.limit_req, 1), 0.0), 1.0)
+
+  st.caption("Daily Requests Remaining")
+  st.progress(
+      1.0 - req_ratio, 
+      text=f"{st.session_state.remaining_req:,} / {st.session_state.limit_req:,} reqs left"
+  )
+  st.caption(f"**Tokens Left (per min):** {st.session_state.remaining_tokens:,}")
+  st.divider()
+
+  # --- Search Archive Widget ---
+  st.header("🔍 Search Archive")
+  search_query = st.text_input("Search logged complaints", placeholder="Filter by keyword...")
+  st.divider()
+
   st.header("📱 App Access")
   app_url = "https://share.streamlit.io" 
   qr = qrcode.QRCode(version=1, box_size=5, border=2)
