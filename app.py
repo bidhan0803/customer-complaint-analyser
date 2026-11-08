@@ -28,6 +28,25 @@ st.write(
 if "authenticated" not in st.session_state:
     st.session_state.authenticated = False
 
+def analyze_text_with_quota(prompt_text):
+    raw_response = client.chat.completions.with_raw_response.create(
+        model="openai/gpt-oss-20b",
+        messages=[{"role": "user", "content": prompt_text}],
+        response_format={"type": "json_object"}
+    )
+    
+    headers = raw_response.headers
+    if "x-ratelimit-limit-requests" in headers:
+        st.session_state.limit_req = int(headers.get("x-ratelimit-limit-requests", 1000))
+    if "x-ratelimit-remaining-requests" in headers:
+        st.session_state.remaining_req = int(headers.get("x-ratelimit-remaining-requests", 1000))
+    if "x-ratelimit-limit-tokens" in headers:
+        st.session_state.limit_tokens = int(headers.get("x-ratelimit-limit-tokens", 6000))
+    if "x-ratelimit-remaining-tokens" in headers:
+        st.session_state.remaining_tokens = int(headers.get("x-ratelimit-remaining-tokens", 6000))
+        
+    return json.loads(raw_response.parse().choices[0].message.content)
+
 def verify_password():
     if st.text_input("Password", type="password", key="password_input") == "secret123":
         st.session_state.authenticated = True
@@ -317,3 +336,11 @@ if st.session_state.history:
           st.write(record["key_issues"])
           st.markdown("**Recommended Action:**")
           st.info(record["recommended_action"])
+
+if search_query and st.session_state.history:
+    df_history = pd.DataFrame(st.session_state.history)
+    mask = df_history.astype(str).apply(lambda x: x.str.contains(search_query, case=False)).any(axis=1)
+    filtered_df = df_history[mask]
+    
+    st.subheader(f"🔎 Search Results for '{search_query}'")
+    st.dataframe(filtered_df, use_container_width=True)
